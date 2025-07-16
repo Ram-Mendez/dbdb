@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.experience.mapper.ExperienceMapper">
+
+    <resultMap id="experienceResultMap" type="com.iberdrola.cappfdmd.experience.model.Experience">
+        <id column="id" property="id"/>
+        <result column="year" property="year"/>
+        <result column="action_70" property="action70"/>
+        <result column="selected" property="selected"/>
+        <result column="competency_id" property="competency.id"/>
+        <result column="skill_id" property="skill.id"/>
+        <result column="user_id" property="user.id"/>
+        <result column="formative_action_id" property="formativeAction.id"/>
+    </resultMap>
+
+    <resultMap id="userResultMap" type="com.iberdrola.cappfdmd.customusers.model.CustomUser">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="email" property="email"/>
+    </resultMap>
+
+    <resultMap id="competencyResultMap" type="com.iberdrola.cappfdmd.competencies.model.Competency">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+    </resultMap>
+
+    <resultMap id="skillResultMap" type="com.iberdrola.cappfdmd.skills.model.Skill">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="strategic" property="strategic"/>
+        <result column="specific" property="specific"/>
+    </resultMap>
+
+    <resultMap id="formativeActionResultMap" type="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+    </resultMap>
+
+
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.experience.model.Experience" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO experience (user_id, competency_id, skill_id, formative_action_id, year, action_70,selected)
+        VALUES (#{user.id}, #{competency.id}, #{skill.id}, #{formativeAction.id}, #{year}, #{action70}, #{selected})
+    </insert>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.experience.model.Experience">
+        UPDATE experience
+        SET user_id = #{user.id},
+        competency_id = #{competency.id},
+        skill_id = #{skill.id},
+        formative_action_id = #{formativeAction.id},
+        year = #{year},
+        action_70 = #{action70},
+        selected = #{selected}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.experience.model.Experience">
+        DELETE FROM experience WHERE id = #{id}
+    </delete>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.experience.model.Experience" resultMap="experienceResultMap">
+        SELECT
+        e.id,
+        e.user_id,
+        e.competency_id,
+        e.skill_id,
+        e.formative_action_id,
+        e.year,
+        e.action_70,
+        e.selected
+        FROM experience e
+        LEFT JOIN core_users u ON e.user_id = u.user_id
+        LEFT JOIN competencies c ON e.competency_id = c.id
+        LEFT JOIN skills s ON e.skill_id = s.id
+        LEFT JOIN formative_actions fa ON e.formative_action_id = fa.id
+        WHERE e.user_id = #{user.id}
+        AND e.competency_id = #{competency.id}
+        AND e.skill_id = #{skill.id}
+        AND e.formative_action_id = #{formativeAction.id}
+        AND e.year = #{year}
+    </select>
+
+    <select id="exists" parameterType="map" resultType="boolean">
+        SELECT EXISTS (
+        SELECT 1
+        FROM experience
+        WHERE user_id = #{userId}
+        AND competency_id = #{competencyId}
+        AND skill_id = #{skillId}
+        AND formative_action_id = #{formativeActionId}
+        AND year = #{year}
+        )
+    </select>
+
+    <select id="findByCompetencyAndSkillFormativeActionAndYear" parameterType="map" resultMap="experienceResultMap">
+        SELECT
+            e.id,
+            e.year,
+            e.action_70,
+            e.user_id,
+            e.competency_id,
+            e.skill_id,
+            e.formative_action_id,
+            e.selected
+        FROM experience e
+        WHERE e.user_id = #{userId}
+            AND e.competency_id = #{competencyId}
+            AND e.skill_id = #{skillId}
+            AND e.formative_action_id = #{formativeActionId}
+            AND e.year = #{year}
+    </select>
+
+
+</mapper>

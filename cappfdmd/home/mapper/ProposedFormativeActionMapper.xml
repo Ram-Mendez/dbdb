@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.home.mapper.ProposedFormativeActionMapper">
+
+    <resultMap id="summaryResultMap" type="com.iberdrola.cappfdmd.home.model.proposedformativeactions.ProposedFormativeActionDto">
+        <id column="SKILL_ID" property="id"/>
+        <result column="FORMATIVE_ACTION_ID" property="formativeActionId"/>
+        <result column="FORMATIVE_ACTION_DESCRIPTION" property="description"/>
+        <result column="SKILL_NAME" property="name"/>
+        <result column="FORMATIVE_ACTION_LEVEL" property="score"/>
+        <result column="OBJECTIVE" property="objective"/>
+        <result column="PROPOSED_REGULATED_ACTION" property="accion10"/>
+        <result column="SOCIAL_LEARNING" property="accion20"/>
+        <result column="ACTION_70" property="accion70"/>
+        <result column="EVALUATED" property="evaluated"/>
+        <result column="EXPERIENCE_ID" property="experienceId"/>
+        <result column="TYPE" property="type"/>
+        <result column="STATUS" property="status"/>
+        <result column="SCORE" property="level"/>
+        <result column="EXPECTED_LEVEL" property="objective"/>
+    </resultMap>
+
+    <resultMap id="competencyResultMap" type="com.iberdrola.cappfdmd.home.model.proposedformativeactions.CompetencyFormativeActionDto">
+        <id column="COMPETENCY_ID" property="id"/>
+        <result column="COMPETENCY_NAME" property="name"/>
+        <result column="COMPETENCY_DESCRIPTION" property="description"/>
+        <collection property="skills" ofType="com.iberdrola.cappfdmd.home.model.proposedformativeactions.ProposedFormativeActionDto" resultMap="summaryResultMap"/>
+    </resultMap>
+
+    <select id="findCompetenciesWithProposedFormativeActions" resultMap="competencyResultMap">
+        SELECT
+            c.id AS COMPETENCY_ID,
+            c.name AS COMPETENCY_NAME,
+            c.description AS COMPETENCY_DESCRIPTION,
+            s.id AS SKILL_ID,
+            s.name AS SKILL_NAME,
+            fa.id AS FORMATIVE_ACTION_ID,
+            s.description AS FORMATIVE_ACTION_DESCRIPTION,
+            fa.level AS FORMATIVE_ACTION_LEVEL,
+            fa.proposed_regulated_action AS PROPOSED_REGULATED_ACTION,
+            fa.social_learning AS SOCIAL_LEARNING,
+            exp.action_70 AS ACTION_70,
+            exp.status AS STATUS,
+            exp.id AS EXPERIENCE_ID,
+            fat.name AS TYPE,
+            e.score AS SCORE,
+            LEAST(e.score + 1, 4) AS OBJECTIVE
+        FROM experience exp
+        JOIN competencies c ON exp.competency_id = c.id
+        JOIN skills s ON exp.skill_id = s.id
+		JOIN formative_actions fa ON fa.id = exp.formative_action_id 
+		JOIN formative_action_types fat ON fat.id = fa.type_id
+		JOIN user_skill_evaluation e ON exp.user_id = e.user_id
+			AND exp.competency_id = e.competency_id
+            AND exp.skill_id = e.skill_id
+        WHERE e.user_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric 
+          AND e.score IS NOT NULL
+          AND fa.level = LEAST(e.score + 1, 4)
+          AND exp.selected is true
+          AND exp.year = EXTRACT(year from current_date)
+        ORDER BY c.id, s.id
+    </select>
+    
+    <select id="getCurrentProposedFormativeActionStatus" parameterType="com.iberdrola.cappfdmd.home.model.proposedformativeactions.ProposedFormativeActionDto" resultType="long">
+    	SELECT status
+    	FROM experience
+    	WHERE id = #{experienceId}
+    	AND user_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric 
+    </select>
+    
+    <update id="updateProposedFormativeActionStatus" parameterType="com.iberdrola.cappfdmd.home.model.proposedformativeactions.ProposedFormativeActionDto">
+        UPDATE experience
+        SET status = #{status}
+        WHERE id = #{experienceId}
+        AND user_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric 
+    </update>
+
+</mapper>

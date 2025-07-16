@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.organizations.mapper.OrganizationMapper">
+
+    <resultMap id="simpleResultMap" type="com.iberdrola.cappfdmd.organizations.model.Organization">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <association property="responsible" javaType="com.iberdrola.cappfdmd.customusers.model.CustomUser">
+            <id column="responsible_id" property="id"/>
+        </association>
+    </resultMap>
+
+    <sql id="find">
+        SELECT
+            id,
+            name,
+            responsible_id
+        FROM organizations
+        WHERE id = #{id}
+    </sql>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.organizations.model.Organization" resultMap="simpleResultMap">
+        <include refid="find"/>
+    </select>
+
+    <sql id="insert">
+        INSERT INTO organizations
+            (name, responsible_id)
+        VALUES (#{name}, #{responsible.id})
+    </sql>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.organizations.model.Organization" useGeneratedKeys="true" keyProperty="id">
+        <include refid="insert"/>
+    </insert>
+
+    <sql id="update">
+        UPDATE organizations
+        SET
+            name = #{name},
+            responsible_id = #{responsible.id}
+        WHERE id = #{id}
+    </sql>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.organizations.model.Organization">
+        <include refid="update"/>
+    </update>
+
+    <sql id="delete">
+        DELETE FROM organizations WHERE id = #{id}
+    </sql>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.organizations.model.Organization">
+        <include refid="delete"/>
+    </delete>
+
+
+    <select id="listOrganizationsByUser" parameterType="long" resultMap="simpleResultMap">
+        select distinct o.id, o.name
+        from core_users cu
+        join organizations o on o.id = cu.organization_id
+        where cu.user_id = #{userId}
+    </select>
+
+    <select id="listAllOrganizations" parameterType="long" resultMap="simpleResultMap">
+        select distinct o.id, o.name
+        from core_users cu
+        join organizations o on o.id = cu.organization_id
+    </select>
+
+
+
+</mapper>

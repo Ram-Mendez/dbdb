@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.disciplines.mapper.DisciplineMapper">
+
+    <resultMap id="simpleResultMap" type="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+    </resultMap>
+
+    <resultMap id="disciplineResultMap" type="com.iberdrola.cappfdmd.disciplines.model.Discipline"
+               extends="simpleResultMap">
+        <collection property="leaders" ofType="com.iberdrola.cappfdmd.customusers.model.CustomUser">
+            <id column="user_id" property="id"/>
+            <result column="name" property="name"/>
+            <result column="organization_id" property="organizationId"/>
+        </collection>
+    </resultMap>
+
+    <sql id="find">
+        SELECT d.id,
+               d.name,
+               u.id   AS user_id,
+               u.name AS name,
+               dl.organization_id
+        FROM disciplines d
+                 LEFT JOIN discipline_leaders dl ON d.id = dl.discipline_id
+                 LEFT JOIN core_users u ON dl.user_id = u.user_id
+        WHERE d.id = #{id}
+    </sql>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline"
+            resultMap="disciplineResultMap">
+        <include refid="find"/>
+    </select>
+
+    <sql id="insert">
+        INSERT INTO disciplines (name)
+        VALUES (#{name})
+    </sql>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline" useGeneratedKeys="true"
+            keyProperty="id">
+        <include refid="insert"/>
+    </insert>
+
+    <sql id="update">
+        UPDATE disciplines
+        SET name = #{name}
+        WHERE id = #{id}
+    </sql>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        <include refid="update"/>
+    </update>
+
+    <sql id="delete">
+        DELETE
+        FROM disciplines
+        WHERE id = #{id}
+    </sql>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        <include refid="delete"/>
+    </delete>
+
+    <sql id="insertLeader">
+        INSERT INTO discipline_leaders (discipline_id, user_id, organization_id)
+        VALUES (#{disciplineId}, #{userId}, #{organizationId})
+    </sql>
+
+    <insert id="insertLeader" parameterType="map">
+        <include refid="insertLeader"/>
+    </insert>
+
+    <sql id="deleteLeadersByDiscipline">
+        DELETE
+        FROM discipline_leaders
+        WHERE discipline_id = #{disciplineId}
+    </sql>
+
+    <delete id="deleteLeadersByDiscipline" parameterType="long">
+        <include refid="deleteLeadersByDiscipline"/>
+    </delete>
+
+    <select id="listDisciplinesByUserId" resultMap="simpleResultMap">
+        SELECT
+        d.id,
+        d.name
+        FROM disciplines d
+        WHERE (d.id IN (
+        <!-- disciplinas del lider de disciplina -->
+        SELECT DISTINCT discipline_id
+        FROM discipline_leaders
+        WHERE user_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric
+        ) AND ${@com.iberdrola.core.profiles.constants.ProfileConstants@LIDER_DISCIPLINA} =
+        #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+        OR (d.id IN (
+        <!-- disciplinas del grupo de apoyo -->
+        SELECT DISTINCT discipline_id
+        FROM competency_center_disciplines
+        WHERE user_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric
+        ) AND ${@com.iberdrola.core.profiles.constants.ProfileConstants@GRUPO_APOYO} =
+        #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+        <!-- responsable de organización (todas) -->
+        OR (${@com.iberdrola.core.profiles.constants.ProfileConstants@RESPONSABLE_ORGANIZACION} =
+        #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+        <!-- disciplinas del administrador (todas) -->
+        OR (${@com.iberdrola.core.profiles.constants.ProfileConstants@ADMINISTRADOR} =
+        #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+    </select>
+
+    <select id="listAllDisciplines" resultType="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        SELECT id, name
+        FROM disciplines
+    </select>
+
+    <select id="listDisciplinesByUser" parameterType="long" resultType="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        SELECT d.id, d.name
+        FROM disciplines d
+                 JOIN discipline_leaders l ON l.discipline_id = d.id
+        WHERE l.user_id = #{userId}
+    </select>
+
+</mapper>

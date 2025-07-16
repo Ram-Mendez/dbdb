@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.home.mapper.ValidationMapper">
+
+    <resultMap id="simpleResultMap" type="com.iberdrola.cappfdmd.home.model.validation.Validation">
+        <id column="ROW_ID" property="id" />
+        <result column="USERNAME" property="user.username" />
+        <result column="NAME" property="user.name" />
+        <result column="EMAIL" property="user.email" />
+        <result column="location" property="user.location.name" />
+        <association property="skill" javaType="com.iberdrola.cappfdmd.home.model.validation.ValidationSkill">
+            <result column="SKILL_NAME" property="name" />
+            <result column="SKILL_DESCRIPTION" property="description" />
+            <result column="EXPECTED_LEVEL" property="expectedLevel" />
+            <result column="AVERAGE_LEVEL" property="averageLevel" />
+            <result column="SELECTED" property="selected" />
+        </association>
+        <association property="formativeAction" javaType="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction">
+            <result column="FORMATIVE_ACTION_ID" property="id" />
+            <result column="FORMATIVE_ACTION_NAME" property="name" />
+            <result column="FORMATIVE_ACTION_DESCRIPTION" property="description" />
+            <result column="score" property="level" />
+            <result column="FORMATIVE_ACTION_COST" property="costPerPerson" />
+            <result column="FORMATIVE_ACTION_HOURS" property="hours" />
+            <result column="FORMATIVE_ACTION_proposed_regulated_action" property="proposedRegulatedAction" />
+            <result column="FORMATIVE_ACTION_social_learning" property="socialLearning" />
+            <result column="id_type_formative_action" property="type.id" />
+            <result column="name_type_formative_action" property="type.name" />
+        </association>
+        <association property="experience" javaType="com.iberdrola.cappfdmd.experience.model.Experience">
+            <result column="ACTION_70" property="action70" />
+            <result column="SELECTED" property="selected" />
+        </association>
+    </resultMap>
+
+    <resultMap type="com.iberdrola.cappfdmd.home.model.validation.Validation" id="fullResultMap" extends="simpleResultMap">
+    </resultMap>
+
+    <resultMap type="com.iberdrola.cappfdmd.home.model.validation.ValidationPage" id="paginableResultMap" extends="BASE.baseSearchResultMap">
+        <collection property="records" resultMap="simpleResultMap" />
+    </resultMap>
+
+    <select id="search" parameterType="com.iberdrola.cappfdmd.home.model.validation.ValidationPage" resultMap="paginableResultMap">
+        <include refid="searchSQL" />
+    </select>
+
+    <select id="export" parameterType="com.iberdrola.cappfdmd.home.model.validation.ValidationPage" resultMap="simpleResultMap">
+        <include refid="searchSQL" />
+    </select>
+
+    <sql id="searchSQL">
+        select
+        row_number() over () as ROW_ID,
+        u.email, u.username, l.name as location,
+        o.name as organization_name,
+        t."name" as team_name,
+        s.name as skill_name,
+        use.score,
+        e.action_70,
+        fa.id as FORMATIVE_ACTION_ID,
+        fa.proposed_regulated_action as FORMATIVE_ACTION_proposed_regulated_action,
+        fa.social_learning as FORMATIVE_ACTION_social_learning,
+        ft.id as id_type_formative_action,
+        ft.name as name_type_formative_action
+        from  core_users u
+        left JOIN organizations o on o.id = U.ORGANIZATION_ID
+        left JOIN teams t on t.id = U.TEAM_ID
+        left join "location" l on l.code = u."location"
+        left join user_skill_evaluation use on use.user_id = u.user_id and use.year = #{filters.year}
+        left join skills s on s.id = use.skill_id
+        left join experience e on e.user_id = u.user_id and e.skill_id = s.id and e.competency_id = use.competency_id
+        left join formative_actions fa on fa.id = e.formative_action_id
+        left join formative_action_types ft on ft.id = fa.type_id
+        <where>
+            <if test="null != filters">
+                <if test="null != filters.user.username and !filters.user.username.isEmpty()">
+                    AND <include refid="BASE.translate1" /> USERNAME <include refid="BASE.translate2_Aproximado" /> #{filters.user.username} <include refid="BASE.translate3_Aproximado" />
+                </if>
+                <if test="null != filters.user.name and !filters.user.name.isEmpty()">
+                    AND <include refid="BASE.translate1" /> U.NAME <include refid="BASE.translate2_Aproximado" /> #{filters.user.name} <include refid="BASE.translate3_Aproximado" />
+                </if>
+                <if test="null != filters.user.email and !filters.user.email.isEmpty()">
+                    AND <include refid="BASE.translate1" /> EMAIL <include refid="BASE.translate2_Aproximado" /> #{filters.user.email} <include refid="BASE.translate3_Aproximado" />
+                </if>
+                <if test="null != filters.user.organization and null != filters.user.organization.id">
+                    AND u.organization_id = #{filters.user.organization.id}
+                </if>
+                <if test="null != filters.user.team and null != filters.user.team.id">
+                    AND u.team_id = #{filters.user.team.id}
+                </if>
+                <if test="null != filters.user.discipline and null != filters.user.discipline.id">
+                    AND u.discipline_id = #{filters.user.discipline.id}
+                </if>
+                <if test="null != filters.skill.skillowner and null != filters.skill.skillowner.id">
+                    AND s.id in (select so.skill_id from skill_owners so where so.user_id = #{filters.skill.skillowner.id})
+                </if>
+                <if test="null != filters.user.location and null != filters.user.location.id">
+                    AND l.id = #{filters.user.location.id}
+                </if>
+                <if test="null != filters.formativeAction and null != filters.formativeAction.type and null != filters.formativeAction.type.id">
+                    AND ft.id = #{filters.formativeAction.type.id}
+                </if>
+                <if test="null != filters.user and null != filters.user.id">
+                    AND u.user_id = #{filters.user.id}
+                </if>
+
+            </if>
+        </where>
+    </sql>
+
+</mapper>

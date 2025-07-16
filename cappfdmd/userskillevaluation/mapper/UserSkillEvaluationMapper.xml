@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.iberdrola.cappfdmd.userskillevaluation.mapper.UserSkillEvaluationMapper">
+
+    <resultMap id="userSkillEvaluationResultMap"
+               type="com.iberdrola.cappfdmd.userskillevaluation.model.UserSkillEvaluation">
+        <id    column="evaluation_id"           property="id"/>
+        <id    column="skill_id"                property="skillId"/>
+
+        <result column="evaluation_year"         property="year"/>
+        <result column="evaluation_score"        property="score"/>
+
+        <association property="user"
+                     javaType="com.iberdrola.cappfdmd.customusers.model.CustomUser">
+            <id     column="user_id"              property="id"/>
+            <result column="user_name"            property="name"/>
+            <result column="user_surname_first"   property="firstSurname"/>
+            <result column="user_surname_second"  property="secondSurname"/>
+        </association>
+
+        <association property="competency"
+                     javaType="com.iberdrola.cappfdmd.competencies.model.Competency">
+            <id     column="comp_id"              property="id"/>
+            <result column="comp_name"            property="name"/>
+            <result column="comp_description"     property="description"/>
+        </association>
+
+        <association property="skill"
+                     javaType="com.iberdrola.cappfdmd.skills.model.Skill">
+            <id     column="skill_id"             property="id"/>
+            <result column="skill_name"           property="name"/>
+            <result column="skill_description"    property="description"/>
+        </association>
+    </resultMap>
+
+    <select id="find"
+            parameterType="com.iberdrola.cappfdmd.userskillevaluation.model.UserSkillEvaluation"
+            resultMap="userSkillEvaluationResultMap">
+        SELECT
+            evaluation.id             AS evaluation_id,
+            evaluation.year           AS evaluation_year,
+            evaluation.score          AS evaluation_score,
+            u.user_id                 AS user_id,
+            u.name                    AS user_name,
+            u.surname_first           AS user_surname_first,
+            u.surname_second          AS user_surname_second,
+            c.id                      AS comp_id,
+            c.name                    AS comp_name,
+            c.description             AS comp_description,
+            s.id                      AS skill_id,
+            s.name                    AS skill_name,
+            s.description             AS skill_description
+        FROM user_skill_evaluation evaluation
+                 JOIN core_users u       ON evaluation.user_id      = u.user_id
+                 JOIN competencies c     ON evaluation.competency_id = c.id
+                 JOIN skills s           ON evaluation.skill_id      = s.id
+        WHERE evaluation.id = #{id}
+    </select>
+
+    <insert id="insert"
+            parameterType="com.iberdrola.cappfdmd.userskillevaluation.model.UserSkillEvaluation"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO user_skill_evaluation (user_id, competency_id, skill_id,
+                                           score, year)
+        VALUES (#{user.id}, #{competency.id}, #{skill.id},
+                #{score}, #{year})
+    </insert>
+
+    <update id="update"
+            parameterType="com.iberdrola.cappfdmd.userskillevaluation.model.UserSkillEvaluation">
+        UPDATE user_skill_evaluation
+        SET user_id        = #{user.id},
+            competency_id  = #{competency.id},
+            skill_id       = #{skill.id},
+            score          = #{score},
+            year           = #{year}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete"
+            parameterType="com.iberdrola.cappfdmd.userskillevaluation.model.UserSkillEvaluation">
+        DELETE FROM user_skill_evaluation WHERE id = #{id}
+    </delete>
+
+    <select id="findEvaluationsByUserAndCompetency"
+            parameterType="map"
+            resultMap="userSkillEvaluationResultMap">
+        SELECT
+            ue.id             AS evaluation_id,
+            ue.year           AS evaluation_year,
+            ue.score          AS evaluation_score,
+            u.user_id         AS user_id,
+            u.name            AS user_name,
+            u.surname_first   AS user_surname_first,
+            u.surname_second  AS user_surname_second,
+            c.id              AS comp_id,
+            c.name            AS comp_name,
+            c.description     AS comp_description,
+            s.id              AS skill_id,
+            s.name            AS skill_name,
+            s.description     AS skill_description
+        FROM skills s
+                 JOIN competencies_skills cs
+                      ON s.id = cs.skill_id
+                 JOIN competencies c
+                      ON cs.competency_id = c.id
+                 LEFT JOIN user_skill_evaluation ue
+                           ON ue.skill_id      = s.id
+                               AND ue.user_id       = #{user.id}
+                               AND ue.competency_id = #{competencyId}
+                               AND ue.year          = #{year}
+                 JOIN core_users u
+                      ON u.user_id = #{user.id}
+        WHERE c.id = #{competencyId}
+          AND u.user_id = #{user.id}
+    </select>
+
+
+    <select id="findExistingEvaluations"
+            resultMap="userSkillEvaluationResultMap"
+            parameterType="map">
+        SELECT
+            ue.id             AS evaluation_id,
+            ue.skill_id       AS skill_id,
+            ue.score          AS evaluation_score,
+            ue.year           AS evaluation_year,
+
+            s.id              AS skill_id,
+            s.name            AS skill_name,
+            s.description     AS skill_description
+
+        FROM user_skill_evaluation ue
+                 JOIN skills s ON ue.skill_id = s.id
+        WHERE ue.user_id = #{user.id}
+          AND ue.competency_id = #{competencyId}
+          AND ue.year = #{year}
+    </select>
+
+    <select id="findByUserAndCompetencyAndSkill" resultMap="userSkillEvaluationResultMap"
+            parameterType="map">
+        SELECT
+        ue.id             AS evaluation_id,
+        ue.year           AS evaluation_year,
+        ue.score          AS evaluation_score,
+        u.user_id         AS user_id,
+        u.name            AS user_name,
+        u.surname_first   AS user_surname_first,
+        u.surname_second  AS user_surname_second,
+        c.id              AS comp_id,
+        c.name            AS comp_name,
+        c.description     AS comp_description,
+        s.id              AS skill_id,
+        s.name            AS skill_name,
+        s.description     AS skill_description
+        FROM user_skill_evaluation ue
+        JOIN core_users u ON ue.user_id = u.user_id
+        JOIN competencies c ON ue.competency_id = c.id
+        JOIN skills s ON ue.skill_id = s.id
+        WHERE ue.user_id = #{user.id}
+        AND ue.competency_id = #{competencyId}
+        AND ue.skill_id = #{skillId}
+        AND ue.year = #{year}
+    </select>
+
+    <select id="findEvaluationsByUser" resultType="com.iberdrola.cappfdmd.userskillevaluation.model.UserSkillEvaluation">
+        SELECT *
+        FROM user_skill_evaluation
+        WHERE user_id = #{userId}
+    </select>
+
+
+
+</mapper>

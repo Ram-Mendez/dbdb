@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.competencies.mapper.CompetencyTeamSkillsMapper">
+
+    <resultMap id="competencyTeamSkillsResultMap" type="com.iberdrola.cappfdmd.competencies.model.CompetencyTeamsSkills">
+        <id column="id" property="id"/>
+        <result column="competency_id" property="competency.id"/>
+        <result column="skill_id" property="skill.id"/>
+        <result column="team_id" property="team.id"/>
+        <result column="year" property="year"/>
+        <result column="selected" property="selected"/>
+        <result column="expected" property="expected"/>
+    </resultMap>
+
+    <select id="findByTeamIdAndCompetencyIdAndSkillIdAndYear"
+            parameterType="map" resultMap="competencyTeamSkillsResultMap">
+        SELECT
+            id,
+            competency_id,
+            skill_id,
+            team_id,
+            year,
+            expected,
+            selected
+        FROM
+        competencies_teams_skills
+        WHERE
+            team_id = #{teamId}
+            AND competency_id = #{competencyId}
+            AND skill_id = #{skillId}
+            AND year = #{year}
+    </select>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.competencies.model.CompetencyTeamsSkills" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO competencies_teams_skills (
+        competency_id,
+        skill_id,
+        team_id,
+        year,
+        expected,
+        selected)
+        VALUES (#{competency.id}, #{skill.id}, #{team.id}, #{year}, #{expected}, #{selected})
+    </insert>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.competencies.model.CompetencyTeamsSkills">
+        UPDATE competencies_teams_skills
+        SET competency_id = #{competency.id},
+        skill_id = #{skill.id},
+        team_id = #{team.id},
+        year = #{year},
+        expected = #{expected},
+        selected = #{selected}
+        WHERE id = #{id}
+    </update>
+
+    <select id="getCompetencyByIdAndTeamId" parameterType="map" resultMap="competencyTeamSkillsResultMap">
+        select  distinct
+            c.id AS competency_id,
+            c.name AS competency_name,
+            c.description AS competency_description,
+            t.id AS team_id,
+            t.name AS team_name,
+            EXISTS (
+            SELECT 1
+            FROM competencies_teams_skills cts_sub
+            WHERE cts_sub.competency_id = c.id
+            AND cts_sub.team_id = t.id
+            AND cts_sub.selected = true
+            ) AS selected
+        from competencies c
+        join competencies_teams_skills cts on cts.competency_id = c.id
+        join teams t on t.id = cts.team_id
+        WHERE cts.competency_id = #{competencyId}
+            AND cts.team_id = #{teamId}
+    </select>
+
+    <update id="deselectAllSkillsByTeamAndCompetencyAndYear">
+        UPDATE competencies_teams_skills
+        SET selected = FALSE
+        WHERE team_id = #{teamId} AND competency_id = #{competencyId} AND year = #{year};
+    </update>
+
+</mapper>

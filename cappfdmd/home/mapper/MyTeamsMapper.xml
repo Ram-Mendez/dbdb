@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.home.mapper.MyTeamsMapper">
+
+    <resultMap id="myTeamsCompetenciesMap" type="com.iberdrola.cappfdmd.home.model.myteams.CompetencyTeam">
+        <id column="ID" property="competency.id"/>
+        <result column="NAME" property="competency.name"/>
+        <result column="selected" property="selected"/>
+        <result column="average_score" property="expectedLevel"/>
+        <result column="average_user_score" property="averageLevel"/>
+	</resultMap>
+
+    <resultMap id="CompetencySelectionResultMap" type="com.iberdrola.cappfdmd.competencies.model.Competency">
+        <id column="competency_id" property="id"/>
+        <result column="competency_name" property="name"/>
+        <result column="competency_description" property="description"/>
+        <result column="selected" property="selected"/>
+
+        <collection property="skills" ofType="com.iberdrola.cappfdmd.skills.model.Skill">
+            <id column="skill_id" property="id"/>
+            <result column="skill_name" property="name"/>
+            <result column="skill_description" property="description"/>
+            <result column="expected" property="expectedLevel"/>
+            <result column="averageLevel" property="averageLevel"/>
+        </collection>
+    </resultMap>
+
+
+    <select id="searchTeamCompetencies" resultMap="myTeamsCompetenciesMap" parameterType="com.iberdrola.cappfdmd.home.model.myteams.MyTeamsFinderDto">
+        SELECT DISTINCT c.id, c.name,
+        (SELECT AVG(score)
+        FROM user_skill_evaluation use
+        WHERE use.competency_id = c.id
+        AND use.user_id IN (
+        SELECT DISTINCT cu.user_id
+        FROM core_users cu
+        <where>
+            <choose>
+                <when test="null != team">
+                    cu.team_id = ct_asociadas.team_id
+                </when>
+                <otherwise>
+                    cu.team_id = ct.team_id
+                </otherwise>
+            </choose>
+        </where>
+        )
+        ) AS average_user_score,
+        (SELECT AVG(expected)
+        FROM competencies_teams_skills cts2
+        WHERE cts2.competency_id = c.id
+        AND expected IS NOT NULL
+        <if test="team != null">
+            AND cts2.team_id = #{team}
+        </if>
+        ) AS average_score
+        FROM competencies c
+        left JOIN competencies_teams ct ON ct.competency_id = c.id
+        left JOIN competencies_teams_skills cts ON cts.competency_id = c.id
+        <if test="team != null">
+            left join competencies_teams ct_asociadas on ct_asociadas.competency_id = c.id and ct_asociadas.team_id  = #{team}
+        </if>
+
+    </select>
+
+
+
+    <select id="oldsearchTeamCompetencies" resultMap="myTeamsCompetenciesMap" parameterType="com.iberdrola.cappfdmd.home.model.myteams.MyTeamsFinderDto">
+        SELECT DISTINCT c.id, c.name,
+        (SELECT AVG(score)
+        FROM user_skill_evaluation use
+        WHERE use.competency_id = c.id
+        AND use.user_id IN (
+        SELECT DISTINCT cu.user_id
+        FROM core_users cu
+        <where>
+            <choose>
+                <when test="null != team">
+                    cu.team_id = ct_asociadas.team_id
+                </when>
+                    <otherwise>
+                        cu.team_id = ct.team_id
+                    </otherwise>
+            </choose>
+        </where>
+        )
+        ) AS average_user_score,
+        (SELECT AVG(expected)
+        FROM competencies_teams_skills cts2
+        WHERE cts2.competency_id = c.id
+        AND expected IS NOT NULL
+        <if test="team != null">
+            AND cts2.team_id = #{team}
+        </if>
+        ) AS average_score
+        FROM competencies c
+        left JOIN competencies_teams ct ON ct.competency_id = c.id
+        left JOIN competencies_teams_skills cts ON cts.competency_id = c.id
+        <if test="team != null">
+        left join competencies_teams ct_asociadas on ct_asociadas.competency_id = c.id and ct_asociadas.team_id  = #{team}
+        </if>
+        <where>
+            <choose>
+                <when test="null != team">
+                    ct.team_id = #{team}
+                </when>
+                <otherwise>
+                    ct.team_id IN (
+                        SELECT DISTINCT team_id
+                        FROM team_organizations
+                        WHERE organization_id = (
+                            SELECT cu.organization_id
+                            FROM core_users cu
+                            WHERE cu.username = #{user, typeHandler = com.iberdrola.cappfdmd.common.handler.UsernameTypeHandler}
+                        )
+                    )
+                </otherwise>
+            </choose>
+            <if test="null != selected">
+                AND cts.selected = #{selected}
+            </if>
+            <if test="null != filter and !filter.isEmpty()">
+                AND <include refid="BASE.translate1" /> NAME <include refid="BASE.translate2_Aproximado" /> #{filter} <include refid="BASE.translate3_Aproximado" />
+            </if>
+        </where>
+    </select>
+
+
+    <select id="getCompetencySelectionPopup" resultMap="CompetencySelectionResultMap">
+        SELECT c.id                     AS competency_id,
+               c.name                   AS competency_name,
+               c.description            AS competency_description,
+               s.id                     AS skill_id,
+               s.name                   AS skill_name,
+               s.description            AS skill_description,
+               cts.expected             AS expected,
+               cts.selected             AS selected,
+               ROUND(AVG(useval.score)) AS averageLevel
+        FROM competencies c
+                 JOIN competencies_skills cs ON cs.competency_id = c.id
+                 JOIN skills s ON s.id = cs.skill_id
+                 LEFT JOIN competencies_teams_skills cts
+                           ON cts.skill_id = s.id
+                               AND cts.competency_id = c.id
+                               AND cts.team_id = #{teamId}
+                               AND cts.year = #{year}
+                 LEFT JOIN user_skill_evaluation useval
+                           ON useval.skill_id = s.id
+                               AND useval.competency_id = c.id
+                               AND useval.year = #{year}
+                               AND useval.user_id IN (SELECT user_id
+                                                      FROM team_users
+                                                      WHERE team_id = #{teamId})
+        WHERE c.id = #{competencyId}
+        GROUP BY c.id, c.name, c.description,
+                 s.id, s.name, s.description,
+                 cts.expected, cts.selected
+    </select>
+
+
+    <insert id="saveCompetencySelection" parameterType="map">
+        INSERT INTO competencies_teams_skills (
+        competency_id,
+        skill_id,
+        team_id,
+        year,
+        expected,
+        selected
+        )
+        VALUES
+        <foreach collection="skills" item="skill" separator=",">
+            (
+            #{competencyId},
+            #{skill.id},
+            #{teamId},
+            #{year},
+            #{skill.expectedLevel},
+            true
+            )
+        </foreach>
+        ON CONFLICT (competency_id, team_id, skill_id, year)
+        DO UPDATE SET expected = EXCLUDED.expected, selected = true
+    </insert>
+
+</mapper>

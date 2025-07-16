@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.competencycenters.mapper.CompetencyCenterMapper">
+
+    <resultMap id="simpleResultMap" type="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenter">
+        <id column="ID" 					property="id"/>
+        <result column="NAME" 				property="name"/>
+    </resultMap>
+    
+    <sql id="find">
+        SELECT
+            ID,
+            NAME
+        FROM COMPETENCY_CENTERS
+        WHERE ID = #{id}
+    </sql>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenter" resultMap="simpleResultMap">
+        <include refid="find"/>
+    </select>
+
+    <sql id="insert">
+        INSERT INTO COMPETENCY_CENTERS (
+        	NAME
+        ) VALUES (
+        	#{name}
+        )
+    </sql>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenter" useGeneratedKeys="true" keyProperty="id">
+        <include refid="insert"/>
+    </insert>
+
+    <sql id="update">
+        UPDATE COMPETENCY_CENTERS
+        SET 
+			NAME = #{name}
+        WHERE ID = #{id}
+    </sql>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenter">
+        <include refid="update"/>
+    </update>
+
+    <sql id="delete">
+        DELETE FROM COMPETENCY_CENTERS 
+		WHERE ID = #{id}
+    </sql>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenter">
+        <include refid="delete"/>
+    </delete>
+
+</mapper>

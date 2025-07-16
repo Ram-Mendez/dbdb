@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.customusers.mapper.CustomUsersMapper">
+
+    <resultMap id="disciplineResultMap" type="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <association property="leaders" column="user_id" select="com.iberdrola.cappfdmd.customusers.mapper.CustomUsersMapper.findLeadersByDiscipline"/>
+    </resultMap>
+
+    <sql id="find">
+        SELECT
+            d.id,
+            d.name,
+            d.created_at,
+            d.updated_at,
+            u.id AS user_id,
+            u.name AS user_name
+        FROM disciplines d
+                 LEFT JOIN discipline_leaders dl ON d.id = dl.discipline_id
+                 LEFT JOIN core_users u ON dl.user_id = u.id
+        WHERE d.id = #{id}
+    </sql>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline" resultMap="disciplineResultMap">
+        <include refid="find"/>
+    </select>
+
+    <sql id="insert">
+        INSERT INTO disciplines (name) VALUES (#{name})
+    </sql>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline" useGeneratedKeys="true" keyProperty="id">
+        <include refid="insert"/>
+    </insert>
+
+    <sql id="update">
+        UPDATE disciplines
+        SET name = #{name}
+        WHERE id = #{id}
+    </sql>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        <include refid="update"/>
+    </update>
+
+    <sql id="delete">
+        DELETE FROM disciplines WHERE id = #{id}
+    </sql>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.disciplines.model.Discipline">
+        <include refid="delete"/>
+    </delete>
+
+    <sql id="insertLeader">
+        INSERT INTO discipline_leaders (discipline_id, user_id)
+        VALUES (#{disciplineId}, #{userId})
+    </sql>
+
+    <insert id="insertLeader" parameterType="map">
+        <include refid="insertLeader"/>
+    </insert>
+
+    <sql id="deleteLeadersByDiscipline">
+        DELETE FROM discipline_leaders WHERE discipline_id = #{disciplineId}
+    </sql>
+
+    <delete id="deleteLeadersByDiscipline" parameterType="long">
+        <include refid="deleteLeadersByDiscipline"/>
+    </delete>
+
+</mapper>

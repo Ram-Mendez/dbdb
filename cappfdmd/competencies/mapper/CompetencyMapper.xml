@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.competencies.mapper.CompetencyMapper">
+
+    <resultMap id="competencyResultMap" type="com.iberdrola.cappfdmd.competencies.model.Competency">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <collection property="skills" ofType="com.iberdrola.cappfdmd.skills.model.Skill">
+            <id column="skill_id" property="id"/>
+            <result column="skill_name" property="name"/>
+            <result column="skill_description" property="description"/>
+            <result column="skill_strategic" property="strategic"/>
+            <result column="skill_specific" property="specific"/>
+        </collection>
+    </resultMap>
+
+    <resultMap type="com.iberdrola.cappfdmd.competencies.model.CompetencyPage" id="paginableResultMap" extends="BASE.baseSearchResultMap">
+        <collection property="records" resultMap="competencyResultMap" />
+    </resultMap>
+
+    <sql id="search">
+        SELECT
+        c.id,
+        c.name,
+        c.description,
+        s.id AS skill_id,
+        s.name AS skill_name,
+        s.description AS skill_description,
+        s.strategic AS skill_strategic,
+        s.specific AS skill_specific
+        FROM competencies c
+        LEFT JOIN competencies_skills cs ON c.id = cs.competency_id
+        LEFT JOIN skills s ON cs.skill_id = s.id
+        <where>
+            <if test="filters.name != null and filters.name != ''">
+                AND c.name LIKE CONCAT('%', #{filters.name}, '%')
+            </if>
+            <if test="filters.description != null and filters.description != ''">
+                AND c.description LIKE CONCAT('%', #{filters.description}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="search" parameterType="com.iberdrola.cappfdmd.competencies.model.CompetencyPage" resultMap="paginableResultMap">
+        <include refid="search"/>
+    </select>
+
+    <sql id="find">
+        SELECT
+            c.id,
+            c.name,
+            c.description,
+            s.id AS skill_id,
+            s.name AS skill_name,
+            s.description AS skill_description,
+            s.strategic AS skill_strategic,
+            s.specific AS skill_specific
+        FROM competencies c
+                 LEFT JOIN competencies_skills cs ON c.id = cs.competency_id
+                 LEFT JOIN skills s ON cs.skill_id = s.id
+        WHERE c.id = #{id}
+    </sql>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.competencies.model.Competency" resultMap="competencyResultMap">
+        <include refid="find"/>
+    </select>
+
+    <sql id="insert">
+        INSERT INTO competencies (name, description)
+        VALUES (#{name}, #{description})
+    </sql>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.competencies.model.Competency" useGeneratedKeys="true" keyProperty="id">
+        <include refid="insert"/>
+    </insert>
+
+    <sql id="update">
+        UPDATE competencies
+        SET name = #{name}, description = #{description}
+        WHERE id = #{id}
+    </sql>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.competencies.model.Competency">
+        <include refid="update"/>
+    </update>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.competencies.model.Competency">
+        DELETE FROM competencies_skills WHERE competency_id = #{id};
+        DELETE FROM competencies WHERE id = #{id};
+    </delete>
+
+</mapper>

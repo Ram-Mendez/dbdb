@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.home.mapper.MyDisciplinesMapper">
+
+    <resultMap id="myDisciplinesCompetenciesMap" type="com.iberdrola.cappfdmd.home.model.myteams.CompetencyTeam">
+        <id column="id" property="competency.id"/>
+        <result column="name" property="competency.name"/>
+        <result column="selected" property="selected"/>
+        <result column="average_score" property="expectedLevel"/>
+        <result column="average_user_score" property="averageLevel"/>
+	</resultMap>
+
+    <resultMap id="CompetencySelectionResultMap" type="com.iberdrola.cappfdmd.competencies.model.Competency">
+        <id column="competency_id" property="id"/>
+        <result column="competency_name" property="name"/>
+        <result column="competency_description" property="description"/>
+        <result column="selected" property="selected"/>
+
+        <collection property="skills" ofType="com.iberdrola.cappfdmd.skills.model.Skill">
+            <id column="skill_id" property="id"/>
+            <result column="skill_name" property="name"/>
+            <result column="skill_description" property="description"/>
+            <result column="expectedLevel" property="expectedLevel"/>
+            <result column="averageLevel" property="averageLevel"/>
+        </collection>
+    </resultMap>
+
+    <select id="getCompetencySelectionPopup" resultMap="CompetencySelectionResultMap">
+        SELECT
+            c.id AS competency_id,
+            c.name AS competency_name,
+            c.description AS competency_description,
+            s.id AS skill_id,
+            s.name AS skill_name,
+            s.description AS skill_description,
+            cds.expected AS expectedLevel,
+            cds.selected             AS selected,
+            ROUND(AVG(useval.score)) AS averageLevel
+        FROM competencies c
+                 JOIN competencies_skills cs ON cs.competency_id = c.id
+                 JOIN skills s ON s.id = cs.skill_id
+                 LEFT JOIN competencies_disciplines_skills cds
+                           ON cds.skill_id = s.id
+                               AND cds.competency_id = c.id
+                               AND cds.discipline_id = #{disciplineId}
+                 LEFT JOIN user_skill_evaluation useval
+                           ON useval.skill_id = s.id
+                               AND useval.competency_id = c.id
+                               AND useval.user_id IN (
+                                   SELECT user_id FROM discipline_leaders WHERE cds.discipline_id = #{disciplineId}
+                               )
+        WHERE c.id = #{competencyId}
+        GROUP BY
+            c.id, c.name, c.description,
+            s.id, s.name, s.description,
+            cds.expected,  cds.selected
+    </select>
+    
+	<select id="searchDisciplineCompetencies" resultMap="myDisciplinesCompetenciesMap" parameterType="com.iberdrola.cappfdmd.home.model.mydisciplines.MyDisciplinesFinderDto">
+        SELECT DISTINCT c.id, c.name,
+        (SELECT ROUND(AVG(score))
+        FROM user_skill_evaluation use
+        WHERE use.competency_id = c.id
+        AND use.user_id IN (
+	        SELECT DISTINCT cu.user_id
+	        FROM core_users cu
+	        WHERE cu.discipline_id = ct.discipline_id
+	        AND ((${@com.iberdrola.core.profiles.constants.ProfileConstants@RESPONSABLE_ORGANIZACION} <![CDATA[<>]]> #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+	        	OR (${@com.iberdrola.core.profiles.constants.ProfileConstants@RESPONSABLE_ORGANIZACION} = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric
+	        		AND cu.organization_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserOrganizationIdTypeHandler}::numeric))
+	        )
+        ) AS average_user_score,
+        (SELECT ROUND(AVG(expected))
+        FROM competencies_disciplines_skills cds2
+        WHERE cds2.competency_id = c.id
+        AND expected IS NOT NULL
+        <if test="discipline != null">
+            AND cds2.discipline_id = #{discipline}
+        </if>
+        ) AS average_score
+        FROM competencies c
+        JOIN competencies_disciplines ct ON ct.competency_id = c.id
+        LEFT JOIN competencies_disciplines_skills cds ON cds.competency_id = c.id
+        <where>
+            <choose>
+                <when test="discipline != null">
+                    ct.discipline_id = #{discipline}
+                </when>
+                <otherwise>
+                    ct.discipline_id IN (<include refid="listDisciplinesByUser" />)
+                </otherwise>
+            </choose>
+            <if test="selected != null">
+                AND cds.selected = #{selected}
+            </if>
+            <if test="filter != null and !filter.isEmpty()">
+                AND <include refid="BASE.translate1" /> NAME <include refid="BASE.translate2_Aproximado" /> #{filter} <include refid="BASE.translate3_Aproximado" />
+            </if>
+        </where>
+    </select>
+    
+    <sql id="listDisciplinesByUser">
+	    SELECT d.id
+	    FROM disciplines d
+	    WHERE (d.id IN (
+	    <!-- disciplinas del lider de disciplina -->
+	        SELECT DISTINCT discipline_id
+	        FROM discipline_leaders
+	        WHERE user_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric
+	    ) AND ${@com.iberdrola.core.profiles.constants.ProfileConstants@LIDER_DISCIPLINA} = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+	    OR (d.id IN (
+	    <!-- disciplinas del grupo de apoyo -->
+	        SELECT DISTINCT discipline_id
+	        FROM competency_center_disciplines
+	        WHERE user_id = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric
+	    ) AND ${@com.iberdrola.core.profiles.constants.ProfileConstants@GRUPO_APOYO} = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+	    <!-- responsable de organización (todas) -->
+	    OR (${@com.iberdrola.core.profiles.constants.ProfileConstants@RESPONSABLE_ORGANIZACION} = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+	    <!-- disciplinas del administrador (todas) -->
+	    OR (${@com.iberdrola.core.profiles.constants.ProfileConstants@ADMINISTRADOR} = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserProfileIdTypeHandler}::numeric)
+    </sql>
+
+</mapper>

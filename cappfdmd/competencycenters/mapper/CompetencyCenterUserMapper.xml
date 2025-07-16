@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.competencycenters.mapper.CompetencyCenterUserMapper">
+
+	<insert id="insert" parameterType="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenterUser">
+        INSERT INTO COMPETENCY_CENTER_USERS (
+        	COMPETENCY_CENTER_ID,
+        	USER_ID,
+        	RESPONSIBLE
+        ) VALUES (
+        	#{center.id},
+        	#{user.id},
+        	#{responsible}
+        )
+    </insert>
+    
+	<update id="update" parameterType="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenterUser">
+        UPDATE COMPETENCY_CENTER_USERS
+        SET RESPONSIBLE = #{responsible}
+        WHERE COMPETENCY_CENTER_ID = #{center.id},
+        AND USER_ID = #{user.id}
+    </update>
+    
+	<delete id="delete" parameterType="com.iberdrola.cappfdmd.competencycenters.model.CompetencyCenterUser">
+        DELETE FROM COMPETENCY_CENTER_USERS
+        WHERE COMPETENCY_CENTER_ID = #{center.id},
+        AND USER_ID = #{user.id}
+    </delete>
+    
+</mapper>

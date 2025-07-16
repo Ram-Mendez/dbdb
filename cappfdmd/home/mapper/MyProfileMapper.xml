@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.home.mapper.MyProfileMapper">
+
+    <resultMap id="myProfileCompetenciesResultMap" type="com.iberdrola.cappfdmd.home.model.MyCompetency">
+        <id 	column="ID" 			property="id"/>
+        <result column="NAME" 			property="name"/>
+        <result column="DESCRIPTION" 	property="description"/>
+        <association property="score" select="getCompetencyScore" column="{id=ID}" />
+	</resultMap>  
+
+    <select id="getMyProfileCompetencies" resultMap="myProfileCompetenciesResultMap">
+        SELECT 
+        	C.ID,
+        	C.NAME,
+        	C.DESCRIPTION
+        FROM CORE_USERS U
+        JOIN COMPETENCIES_TEAMS CT ON U.TEAM_ID = CT.TEAM_ID
+        JOIN COMPETENCIES C ON CT.COMPETENCY_ID = C.ID
+        WHERE U.USERNAME = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UsernameTypeHandler}
+    	ORDER BY C.ID
+    </select>
+    
+	<select id="getCompetencyScore" resultType="java.lang.Integer">
+		SELECT ROUND(AVG(US.SCORE)) as SCORE
+		FROM CORE_USERS U
+		LEFT JOIN USER_SKILL_EVALUATION US ON U.USER_ID = US.USER_ID
+		WHERE U.USERNAME = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UsernameTypeHandler}
+	    AND US.YEAR = EXTRACT(YEAR FROM CURRENT_DATE)
+	    AND US.COMPETENCY_ID = #{id}
+		GROUP BY COMPETENCY_ID
+    </select>
+    
+    <select id="hasUserSkillEvaluations">
+    	SELECT EXISTS (
+			SELECT 1 
+			FROM USER_SKILL_EVALUATION 
+			WHERE USER_ID = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric 
+			AND YEAR = EXTRACT(YEAR FROM CURRENT_DATE)
+		)
+    </select>
+    
+    <select id="hasSkillsSelected">
+		SELECT EXISTS (
+			SELECT 1 
+			FROM EXPERIENCE 
+			WHERE USER_ID = #{id, typeHandler = com.iberdrola.cappfdmd.common.handler.UserIdTypeHandler}::numeric 
+			AND YEAR = EXTRACT(YEAR FROM CURRENT_DATE)
+			AND SELECTED IS TRUE
+		)
+    </select>
+
+</mapper>

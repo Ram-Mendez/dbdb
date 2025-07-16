@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.home.mapper.SummaryMapper">
+
+    <resultMap id="simpleResultMap" type="com.iberdrola.cappfdmd.home.model.summary.Summary">
+        <id column="ROW_ID" property="id" />
+        <result column="USERNAME" property="user.username" />
+        <result column="user_id" property="user.id" />
+        <result column="NAME" property="user.name" />
+        <result column="EMAIL" property="user.email" />
+        <result column="location_code" property="user.location.code" />
+        <result column="location_name" property="user.location.name" />
+        <result column="team_id" property="user.team.id" />
+        <result column="team_name" property="user.team.name" />
+        <result column="organization_id" property="user.organization.id" />
+        <result column="organization_name" property="user.organization.name" />
+        <result column="discipline_id" property="user.discipline.id" />
+        <result column="discipline_name" property="user.discipline.name" />
+
+        <association property="skill" javaType="com.iberdrola.cappfdmd.home.model.summary.SummarySkill">
+            <result column="SKILL_NAME" property="name" />
+            <result column="SKILL_id" property="id" />
+            <result column="SKILL_DESCRIPTION" property="description" />
+            <result column="EXPECTED_LEVEL" property="expectedLevel" />
+            <result column="AVERAGE_LEVEL" property="averageLevel" />
+            <result column="SELECTED" property="selected" />
+        </association>
+        <association property="formativeAction" javaType="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction">
+            <result column="FORMATIVE_ACTION_ID" property="id" />
+            <result column="FORMATIVE_ACTION_NAME" property="name" />
+            <result column="FORMATIVE_ACTION_DESCRIPTION" property="description" />
+            <result column="score" property="level" />
+            <result column="FORMATIVE_ACTION_COST" property="costPerPerson" />
+            <result column="FORMATIVE_ACTION_HOURS" property="hours" />
+            <result column="FORMATIVE_ACTION_proposed_regulated_action" property="proposedRegulatedAction" />
+            <result column="FORMATIVE_ACTION_social_learning" property="socialLearning" />
+            <result column="id_type_formative_action" property="type.id" />
+            <result column="name_type_formative_action" property="type.name" />
+        </association>
+        <association property="experience" javaType="com.iberdrola.cappfdmd.experience.model.Experience">
+            <result column="competency_id" property="competency.id" />
+            <result column="ACTION_70" property="action70" />
+            <result column="SELECTED" property="selected" />
+        </association>
+
+    </resultMap>
+
+    <resultMap type="com.iberdrola.cappfdmd.home.model.summary.Summary" id="fullResultMap" extends="simpleResultMap">
+    </resultMap>
+
+    <resultMap type="com.iberdrola.cappfdmd.home.model.summary.SummaryPage" id="paginableResultMap" extends="BASE.baseSearchResultMap">
+        <collection property="records" resultMap="simpleResultMap" />
+    </resultMap>
+
+    <select id="search" parameterType="com.iberdrola.cappfdmd.home.model.summary.SummaryPage" resultMap="paginableResultMap">
+        <include refid="searchSQL" />
+    </select>
+
+    <select id="export" parameterType="com.iberdrola.cappfdmd.home.model.summary.SummaryPage" resultMap="simpleResultMap">
+        <include refid="searchSQL" />
+    </select>
+
+    <sql id="searchSQL">
+        select
+        row_number() over () as ROW_ID,
+        c.id as competency_id,
+        u.user_id as user_id,
+        u.email, u.username,  l.code as location_code, l.name as location_name,
+        o.id as organization_id,
+        o.name as organization_name,
+        d.id as discipline_id, d.name as discipline_name,
+        t.id as team_id,
+        t."name" as team_name,
+        s.id as skill_id,
+        s.name as skill_name,
+        use.score,
+        e.action_70,
+        fa.id as FORMATIVE_ACTION_ID,
+        fa.proposed_regulated_action as FORMATIVE_ACTION_proposed_regulated_action,
+        fa.social_learning as FORMATIVE_ACTION_social_learning,
+        ft.id as id_type_formative_action,
+        ft.name as name_type_formative_action,
+        coalesce(cts.expected,cds.expected) as expected_level
+        from  core_users u
+        left JOIN organizations o on o.id = U.ORGANIZATION_ID
+        left join disciplines d on d.id = u.discipline_id
+        left JOIN teams t on t.id = U.TEAM_ID
+        left join "location" l on l.code = u."location"
+        join user_skill_evaluation use on use.user_id = u.user_id and use.year = #{filters.year}
+        left join skills s on s.id = use.skill_id
+        left join experience e on e.user_id = u.user_id and e.skill_id = s.id and e.competency_id = use.competency_id
+        join formative_actions fa on fa.id = e.formative_action_id
+        left join formative_action_types ft on ft.id = fa.type_id
+        join competencies c on c.id = e.competency_id
+        left join competencies_disciplines_skills cds on cds.competency_id = c.id and cds.skill_id = s.id and cds.year = #{filters.year} and cds.discipline_id = u.discipline_id
+        left join competencies_teams_skills cts on cts.competency_id = c.id and cts.skill_id = s.id and cts.year = #{filters.year} and cts.team_id  = u.team_id
+        <where>
+            <if test="null != filters">
+                <if test="null != filters.user.username and !filters.user.username.isEmpty()">
+                    AND <include refid="BASE.translate1" /> USERNAME <include refid="BASE.translate2_Aproximado" /> #{filters.user.username} <include refid="BASE.translate3_Aproximado" />
+                </if>
+                <if test="null != filters.user.name and !filters.user.name.isEmpty()">
+                    AND <include refid="BASE.translate1" /> U.NAME <include refid="BASE.translate2_Aproximado" /> #{filters.user.name} <include refid="BASE.translate3_Aproximado" />
+                </if>
+                <if test="null != filters.user.email and !filters.user.email.isEmpty()">
+                    AND <include refid="BASE.translate1" /> EMAIL <include refid="BASE.translate2_Aproximado" /> #{filters.user.email} <include refid="BASE.translate3_Aproximado" />
+                </if>
+                <if test="null != filters.user.organization and null != filters.user.organization.id">
+                    AND u.organization_id = #{filters.user.organization.id}
+                </if>
+                <if test="null != filters.user.team and null != filters.user.team.id">
+                    AND u.team_id = #{filters.user.team.id}
+                </if>
+                <if test="null != filters.user.discipline and null != filters.user.discipline.id">
+                    AND u.discipline_id = #{filters.user.discipline.id}
+                </if>
+                <if test="null != filters.skill.skillowner and null != filters.skill.skillowner.id">
+                    AND s.id in (select so.skill_id from skill_owners so where so.user_id = #{filters.skill.skillowner.id})
+                </if>
+                <if test="null != filters.user.location and null != filters.user.location.id">
+                    AND l.id = #{filters.user.location.id}
+                </if>
+                <if test="null != filters.formativeAction and null != filters.formativeAction.type and null != filters.formativeAction.type.id">
+                    AND ft.id = #{filters.formativeAction.type.id}
+                </if>
+                <if test="null != filters.user and null != filters.user.id">
+                    AND u.user_id = #{filters.user.id}
+                </if>
+
+            </if>
+        </where>
+    </sql>
+
+</mapper>

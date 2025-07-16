@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.skills.mapper.SkillMapper">
+
+    <resultMap id="skillResultMap" type="com.iberdrola.cappfdmd.skills.model.Skill">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="strategic" property="strategic"/>
+        <result column="specific" property="specific"/>
+        <collection property="skillOwners" ofType="com.iberdrola.cappfdmd.customusers.model.CustomUser">
+            <id column="user_id" property="id"/>
+        </collection>
+        <collection property="formativeActions" ofType="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction">
+            <id column="formative_action_id" property="id"/>
+            <result column="formative_action_name" property="name"/>
+            <result column="formative_action_description" property="description"/>
+            <result column="formative_action_level" property="level"/>
+            <result column="formative_action_cost_per_person" property="costPerPerson"/>
+            <result column="formative_action_hours" property="hours"/>
+            <result column="formative_action_type" property="type.id"/>
+            <result column="formative_action_proposed_regulated_action" property="proposedRegulatedAction"/>
+            <result column="formative_action_social_learning" property="socialLearning"/>
+        </collection>
+    </resultMap>
+
+
+
+
+    <sql id="find">
+        SELECT
+            s.id,
+            s.name,
+            s.description,
+            s.strategic,
+            s.specific,
+            u.user_id AS user_id,
+            fa.id AS formative_action_id,
+            fa.name AS formative_action_name,
+            fa.description AS formative_action_description,
+            fa.level AS formative_action_level,
+            fa.cost_per_person AS formative_action_cost_per_person,
+            fa.hours AS formative_action_hours,
+            fa.type_id AS formative_action_type,
+            fa.proposed_regulated_action AS formative_action_proposed_regulated_action,
+            fa.social_learning AS formative_action_social_learning
+        FROM skills s
+                 LEFT JOIN skill_owners sso ON s.id = sso.skill_id
+                 LEFT JOIN core_users u ON sso.user_id = u.user_id
+                 LEFT JOIN skill_formative_actions sfa ON s.id = sfa.skill_id
+                 LEFT JOIN formative_actions fa ON sfa.formative_action_id = fa.id
+        WHERE s.id = #{id}
+    </sql>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.skills.model.Skill" resultMap="skillResultMap">
+        <include refid="find"/>
+    </select>
+
+    <sql id="insert">
+        INSERT INTO skills (name, description, strategic, specific)
+        VALUES (#{name}, #{description}, #{strategic}, #{specific})
+    </sql>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.skills.model.Skill" useGeneratedKeys="true" keyProperty="id">
+        <include refid="insert"/>
+    </insert>
+
+    <insert id="insertFormativeActionToSkill">
+        INSERT INTO skill_formative_actions (skill_id, formative_action_id)
+        VALUES (#{skillId}, #{formativeActionId})
+    </insert>
+
+    <sql id="update">
+        UPDATE skills
+        SET name = #{name},
+            description = #{description},
+            strategic = #{strategic},
+            specific = #{specific}
+        WHERE id = #{id}
+    </sql>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.skills.model.Skill">
+        <include refid="update"/>
+    </update>
+
+    <sql id="delete">
+        DELETE FROM skills WHERE id = #{id}
+    </sql>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.skills.model.Skill">
+        <include refid="delete"/>
+    </delete>
+
+    <delete id="deleteFormativeActionFromSkill">
+        DELETE FROM skill_formative_actions
+        WHERE skill_id = #{skillId} AND formative_action_id = #{formativeActionId}
+    </delete>
+
+    <select id="listSkillsByUser" parameterType="long" resultMap="skillResultMap">
+        select distinct s.id, s.name
+        from competencies_teams_skills cts
+        join skills s on s.id = cts.skill_id
+        where cts.team_id in
+            (select team_id from team_organizations torg where torg.organization_id = (select cu.organization_id from core_users cu where cu.user_id =#{userId}))
+    </select>
+
+    <select id="listAllSkills" parameterType="long" resultMap="skillResultMap">
+        select distinct s.id, s.name
+        from skills s
+    </select>
+
+
+</mapper>

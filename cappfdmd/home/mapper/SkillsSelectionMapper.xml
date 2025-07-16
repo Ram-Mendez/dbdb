@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.home.mapper.SkillsSelectionMapper">
+
+
+    <resultMap id="skillsSelectionResultMap" type="com.iberdrola.cappfdmd.home.model.skillselection.SkillsSelection">
+        <id column="competency_id" property="id"/>
+        <result column="competency_name" property="name"/>
+        <result column="competency_description" property="description"/>
+        <collection property="skills" ofType="com.iberdrola.cappfdmd.home.model.skillselection.SkillsSelectionSkills">
+            <id column="skill_id" property="id"/>
+            <result column="skill_name" property="name"/>
+            <result column="formative_action_id" property="formativeActionId"/>
+            <result column="formative_action_level" property="level"/>
+            <result column="userLevel" property="userLevel"/>
+            <result column="formative_action_description" property="description"/>
+            <result column="proposed_regulated_action" property="accion10"/>
+            <result column="social_learning" property="accion20"/>
+            <result column="accion70" property="accion70"/>
+            <result column="selected" property="selected"/>
+        </collection>
+    </resultMap>
+
+    <select id="getSkillsSelectionByUserId" parameterType="map" resultMap="skillsSelectionResultMap">
+        SELECT
+        c.id AS competency_id,
+        c."name" AS competency_name,
+        c.description AS competency_description,
+        s.id AS skill_id,
+        s."name" AS skill_name,
+        fa.id as formative_action_id,
+        use.score AS formative_action_level,
+        fa.description AS formative_action_description,
+        fa.proposed_regulated_action AS proposed_regulated_action,
+        fa.social_learning AS social_learning,
+        use.score as userLevel,
+        e.action_70  as accion70,
+        e.selected as selected
+        FROM formative_actions fa
+        JOIN skill_formative_actions sfa ON fa.id = sfa.formative_action_id
+        JOIN skills s ON s.id = sfa.skill_id
+        JOIN competencies_skills cs ON cs.skill_id = s.id
+        JOIN competencies c ON c.id = cs.competency_id
+        JOIN competencies_teams ct ON ct.competency_id = c.id
+        JOIN user_skill_evaluation use ON use.user_id = #{userId}
+        AND use.competency_id = c.id
+        AND use.skill_id = s.id
+        AND fa."level" = CASE WHEN use.score = 4 THEN use.score ELSE (use.score + 1) END
+        AND use."year" = #{year}
+        left join experience e on e.user_id  = use.user_id and e.competency_id = c.id and e.skill_id = s.id and e.formative_action_id = fa.id and e.year = use.year
+        WHERE ct.team_id IN (
+        SELECT tu.team_id
+        FROM team_users tu
+        WHERE tu.user_id = #{userId}  union all select team_id from core_users cu where cu.user_id = #{userId}
+        )
+        UNION ALL
+        SELECT
+        c.id AS competency_id,
+        c."name" AS competency_name,
+        c.description AS competency_description,
+        s.id AS skill_id,
+        s."name" AS skill_name,
+        fa.id as formative_action_id,
+        use.score AS formative_action_level,
+        fa.description AS formative_action_description,
+        fa.proposed_regulated_action AS proposed_regulated_action,
+        fa.social_learning AS social_learning,
+        use.score as userLevel,
+        e.action_70  as accion70,
+        e.selected as selected
+        FROM formative_actions fa
+        JOIN skill_formative_actions sfa ON fa.id = sfa.formative_action_id
+        JOIN skills s ON s.id = sfa.skill_id
+        JOIN competencies_skills cs ON cs.skill_id = s.id
+        JOIN competencies c ON c.id = cs.competency_id
+        JOIN competencies_disciplines cd ON cd.competency_id = c.id
+        JOIN user_skill_evaluation use ON use.user_id = #{userId}
+        AND use.competency_id = c.id
+        AND use.skill_id = s.id
+        AND fa."level" = CASE WHEN use.score = 4 THEN use.score ELSE (use.score + 1) END
+        AND use."year" = #{year}
+        left join experience e on e.user_id  = use.user_id and e.competency_id = c.id and e.skill_id = s.id and e.formative_action_id = fa.id and e.year = use.year
+        WHERE cd.discipline_id in (
+        SELECT u.discipline_id
+        FROM core_users u
+        WHERE u.user_id = #{userId} union all select discipline_id from core_users cu where cu.user_id = #{userId}
+        )
+        ORDER BY competency_id, skill_id;
+    </select>
+
+    <select id="oldgetSkillsSelectionByUserId" parameterType="map" resultMap="skillsSelectionResultMap">
+        select c.id as competency_id, c."name" as competency_name, s.id as skill_id, s."name" as skill_name, fa."level" as formative_action_level, fa.description formative_action_description
+        from formative_actions fa
+        join skill_formative_actions sfa on fa.id = sfa.formative_action_id
+        join skills s on s.id = sfa.skill_id
+        join competencies_skills cs on cs.skill_id = s.id
+        join competencies c on c.id = cs.competency_id
+        join competencies_teams ct on ct.competency_id = c.id
+        join user_skill_evaluation use on use.user_id = #{userId} and use.competency_id = c.id and use.skill_id = s.id and fa."level" = (use.score+1) and use."year" = #{year}
+        where ct.team_id in (select tu.team_id from team_users tu where tu.user_id = #{userId})
+
+        union all
+
+        select c.id as competency_id, c."name" as competency_name,
+        s.id as skill_id, s."name" as skill_name,
+        fa."level" as formative_action_level, fa.description formative_action_description
+        from formative_actions fa
+        join skill_formative_actions sfa on fa.id = sfa.formative_action_id
+        join skills s on s.id = sfa.skill_id
+        join competencies_skills cs on cs.skill_id = s.id
+        join competencies c on c.id = cs.competency_id
+        join competencies_disciplines cd on cd.competency_id = c.id
+        join user_skill_evaluation use on use.user_id = #{userId} and use.competency_id = c.id and use.skill_id = s.id and fa."level" = (use.score+1) and use."year" = #{year}
+        where cd.discipline_id = (select u.discipline_id from core_users u where u.user_id = #{userId})
+        ;
+    </select>
+
+</mapper>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.disciplines.mapper.CompetencyDisciplineSkillsMapper">
+
+    <resultMap id="competencyDisciplineSkillsResultMap" type="com.iberdrola.cappfdmd.disciplines.model.CompetencyDisciplinesSkills">
+        <id column="id" property="id"/>
+        <result column="competency_id" property="competency.id"/>
+        <result column="skill_id"      property="skill.id"/>
+        <result column="discipline_id" property="discipline.id"/>
+        <result column="year" property="year"/>
+        <result column="selected" property="selected"/>
+        <result column="expected" property="expected"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.disciplines.model.CompetencyDisciplinesSkills" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO competencies_disciplines_skills (
+        competency_id,
+        skill_id,
+        discipline_id,
+        year,
+        expected,
+        selected)
+        VALUES (#{competency.id}, #{skill.id}, #{discipline.id}, #{year}, #{expected}, #{selected})
+    </insert>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.disciplines.model.CompetencyDisciplinesSkills">
+        UPDATE competencies_disciplines_skills
+        SET competency_id = #{competency.id},
+            skill_id = #{skill.id},
+            discipline_id = #{discipline.id},
+            year = #{year},
+            expected = #{expected},
+            selected = #{selected}
+        WHERE id = #{id}
+    </update>
+    
+    <update id="deselectAllSkillsByDisciplineAndCompetencyAndYear">
+        UPDATE competencies_disciplines_skills
+        SET selected = FALSE
+        WHERE discipline_id = #{disciplineId} AND competency_id = #{competencyId} AND year = #{year};
+    </update>
+
+    <select id="findByDisciplineIdAndCompetencyIdAndSkillIdAndYear"
+            parameterType="map" resultMap="competencyDisciplineSkillsResultMap">
+        SELECT id,
+               competency_id,
+               skill_id,
+               discipline_id,
+               year,
+               expected,
+               selected
+        FROM competencies_disciplines_skills
+        WHERE discipline_id = #{disciplineId}
+          AND competency_id = #{competencyId}
+          AND skill_id = #{skillId}
+          AND year = #{year}
+    </select>
+
+    <select id="getCompetencyByIdAndDisciplineId" parameterType="map" resultMap="competencyDisciplineSkillsResultMap">
+        SELECT DISTINCT
+            c.id AS competency_id,
+            c.name AS competency_name,
+            c.description AS competency_description,
+            d.id AS discipline_id,
+            d.name AS discipline_name,
+            EXISTS (
+	            SELECT 1
+	            FROM competencies_disciplines_skills cds2
+	            WHERE cds2.competency_id = c.id
+	            AND cds2.discipline_id = d.id
+	            AND cds2.selected = true
+            ) AS selected
+        FROM competencies c
+        JOIN competencies_disciplines_skills cds ON cds.competency_id = c.id
+        JOIN disciplines d ON d.id = cds.discipline_id
+        WHERE cds.competency_id = #{competencyId}
+        AND cds.discipline_id = #{disciplineId}
+    </select>
+
+</mapper>

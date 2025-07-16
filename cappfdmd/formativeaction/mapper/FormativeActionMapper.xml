@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.1//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.iberdrola.cappfdmd.formativeaction.mapper.FormativeActionMapper">
+
+    <resultMap id="simpleResultMap" type="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction">
+        <id column="ID" 					property="id"/>
+        <result column="NAME" 				property="name"/>
+        <result column="DESCRIPTION" 		property="description"/>
+        <result column="LEVEL" 				property="level"/>
+		<result column="COST_PER_PERSON" 	property="costPerPerson"/>
+		<result column="HOURS" 				property="hours"/>
+		<result column="PROPOSED_REGULATED_ACTION" property="proposedRegulatedAction"/>
+		<result column="SOCIAL_LEARNING" 	property="socialLearning"/>
+        <association property="type" javaType="com.iberdrola.cappfdmd.formativeaction.model.FormativeActionType">
+            <result column="TYPE_ID" property="id" />
+            <result column="TYPE_NAME" property="name" />
+        </association>
+    </resultMap>
+
+
+    <resultMap id="simpleTypesResultMap" type="com.iberdrola.cappfdmd.formativeaction.model.FormativeActionType">
+        <id column="ID" 					property="id"/>
+        <result column="NAME" 				property="name"/>
+    </resultMap>
+    
+    <sql id="find">
+        SELECT
+            ID,
+            NAME,
+            DESCRIPTION,
+            LEVEL,
+            COST_PER_PERSON,
+            HOURS,
+            TYPE_ID,
+            PROPOSED_REGULATED_ACTION,
+            SOCIAL_LEARNING
+        FROM FORMATIVE_ACTIONS
+        WHERE ID = #{id}
+    </sql>
+
+    <select id="find" parameterType="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction" resultMap="simpleResultMap">
+        <include refid="find"/>
+    </select>
+
+    <select id="listFormativeActionTypes" resultMap="simpleTypesResultMap">
+        SELECT id, name
+        FROM FORMATIVE_ACTION_TYPES
+    </select>
+
+    <sql id="insert">
+        INSERT INTO FORMATIVE_ACTIONS (
+        	NAME, 
+        	DESCRIPTION, 
+        	LEVEL,
+            COST_PER_PERSON,
+            HOURS,
+            TYPE_ID,
+            PROPOSED_REGULATED_ACTION,
+            SOCIAL_LEARNING
+        ) VALUES (
+        	#{name}, 
+        	#{description}, 
+        	#{level},
+			#{costPerPerson}, 
+			#{hours}, 
+			#{type.id},
+			#{proposedRegulatedAction}, 
+			#{socialLearning}
+        )
+    </sql>
+
+    <insert id="insert" parameterType="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction" useGeneratedKeys="true" keyProperty="id">
+        <include refid="insert"/>
+    </insert>
+
+    <sql id="update">
+        UPDATE FORMATIVE_ACTIONS
+        SET 
+			NAME = #{name},
+            DESCRIPTION = #{description},
+            LEVEL = #{level},
+            COST_PER_PERSON = #{costPerPerson},
+            HOURS = #{hours}, 
+            TYPE_ID = #{type.id},
+            PROPOSED_REGULATED_ACTION = #{proposedRegulatedAction}, 
+            SOCIAL_LEARNING = #{socialLearning}
+        WHERE ID = #{id}
+    </sql>
+
+    <update id="update" parameterType="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction">
+        <include refid="update"/>
+    </update>
+
+    <sql id="delete">
+        DELETE FROM FORMATIVE_ACTIONS 
+		WHERE ID = #{id}
+    </sql>
+
+    <delete id="delete" parameterType="com.iberdrola.cappfdmd.formativeaction.model.FormativeAction">
+        <include refid="delete"/>
+    </delete>
+
+</mapper>
