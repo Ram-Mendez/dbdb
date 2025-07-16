@@ -1,0 +1,56 @@
+--liquibase formatted sql
+
+--changeset core-team locations dbms:postgresql
+--comment: insercion inicial de ubicaciones
+INSERT INTO location (CODE, NAME) VALUES ('01', 'Álava');
+INSERT INTO location (CODE, NAME) VALUES ('02', 'Albacete');
+INSERT INTO location (CODE, NAME) VALUES ('03', 'Alicante');
+INSERT INTO location (CODE, NAME) VALUES ('04', 'Almería');
+INSERT INTO location (CODE, NAME) VALUES ('05', 'Ávila');
+INSERT INTO location (CODE, NAME) VALUES ('06', 'Badajoz');
+INSERT INTO location (CODE, NAME) VALUES ('07', 'Islas Baleares');
+INSERT INTO location (CODE, NAME) VALUES ('08', 'Barcelona');
+INSERT INTO location (CODE, NAME) VALUES ('09', 'Burgos');
+INSERT INTO location (CODE, NAME) VALUES ('10', 'Cáceres');
+INSERT INTO location (CODE, NAME) VALUES ('11', 'Cádiz');
+INSERT INTO location (CODE, NAME) VALUES ('12', 'Castellón');
+INSERT INTO location (CODE, NAME) VALUES ('13', 'Ciudad Real');
+INSERT INTO location (CODE, NAME) VALUES ('14', 'Córdoba');
+INSERT INTO location (CODE, NAME) VALUES ('15', 'A Coruña');
+INSERT INTO location (CODE, NAME) VALUES ('16', 'Cuenca');
+INSERT INTO location (CODE, NAME) VALUES ('17', 'Girona');
+INSERT INTO location (CODE, NAME) VALUES ('18', 'Granada');
+INSERT INTO location (CODE, NAME) VALUES ('19', 'Guadalajara');
+INSERT INTO location (CODE, NAME) VALUES ('20', 'Guipúzcoa');
+INSERT INTO location (CODE, NAME) VALUES ('21', 'Huelva');
+INSERT INTO location (CODE, NAME) VALUES ('22', 'Huesca');
+INSERT INTO location (CODE, NAME) VALUES ('23', 'Jaén');
+INSERT INTO location (CODE, NAME) VALUES ('24', 'León');
+INSERT INTO location (CODE, NAME) VALUES ('25', 'Lleida');
+INSERT INTO location (CODE, NAME) VALUES ('26', 'La Rioja');
+INSERT INTO location (CODE, NAME) VALUES ('27', 'Lugo');
+INSERT INTO location (CODE, NAME) VALUES ('28', 'Madrid');
+INSERT INTO location (CODE, NAME) VALUES ('29', 'Málaga');
+INSERT INTO location (CODE, NAME) VALUES ('30', 'Murcia');
+INSERT INTO location (CODE, NAME) VALUES ('31', 'Navarra');
+INSERT INTO location (CODE, NAME) VALUES ('32', 'Ourense');
+INSERT INTO location (CODE, NAME) VALUES ('33', 'Asturias');
+INSERT INTO location (CODE, NAME) VALUES ('34', 'Palencia');
+INSERT INTO location (CODE, NAME) VALUES ('35', 'Las Palmas');
+INSERT INTO location (CODE, NAME) VALUES ('36', 'Pontevedra');
+INSERT INTO location (CODE, NAME) VALUES ('37', 'Salamanca');
+INSERT INTO location (CODE, NAME) VALUES ('38', 'Santa Cruz de Tenerife');
+INSERT INTO location (CODE, NAME) VALUES ('39', 'Cantabria');
+INSERT INTO location (CODE, NAME) VALUES ('40', 'Segovia');
+INSERT INTO location (CODE, NAME) VALUES ('41', 'Sevilla');
+INSERT INTO location (CODE, NAME) VALUES ('42', 'Soria');
+INSERT INTO location (CODE, NAME) VALUES ('43', 'Tarragona');
+INSERT INTO location (CODE, NAME) VALUES ('44', 'Teruel');
+INSERT INTO location (CODE, NAME) VALUES ('45', 'Toledo');
+INSERT INTO location (CODE, NAME) VALUES ('46', 'Valencia');
+INSERT INTO location (CODE, NAME) VALUES ('47', 'Valladolid');
+INSERT INTO location (CODE, NAME) VALUES ('48', 'Vizcaya');
+INSERT INTO location (CODE, NAME) VALUES ('49', 'Zamora');
+INSERT INTO location (CODE, NAME) VALUES ('50', 'Zaragoza');
+INSERT INTO location (CODE, NAME) VALUES ('51', 'Ceuta');
+INSERT INTO location (CODE, NAME) VALUES ('52', 'Melilla');
